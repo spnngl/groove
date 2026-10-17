@@ -93,6 +93,19 @@ fn going(open: &Open) -> Vec<Entry> {
             Act::Key(Action::FoldSidebar),
         ),
         act("Go", "Terminals", Act::Key(Action::Terminals)),
+        act("Go", "Keys to the rail", Act::Key(Action::FocusRail)),
+        act("Go", "Keys to the agent", Act::Key(Action::FocusAgent)),
+        act(
+            "Go",
+            "Keys to the workspace",
+            Act::Key(Action::FocusWorkspace),
+        ),
+        act("Go", "Keys to the sidebar", Act::Key(Action::FocusSidebar)),
+        act(
+            "Go",
+            "Keys to the commit box",
+            Act::Key(Action::FocusCommit),
+        ),
         act("Go", "New terminal", Act::Key(Action::NewTerminal)),
         act("Go", "Reload the worktree", Act::Key(Action::Reload)),
     ]);
@@ -203,9 +216,17 @@ fn tasked(app: &AppState, open: &Open) -> Vec<Entry> {
     out
 }
 
-/// Each theme but the one on.
+/// Each theme but the one on, then the code's wrap turned the other way.
 fn themes(app: &AppState) -> Vec<Entry> {
     let on = app.config.theme();
+    let wrap = app.config.wrap_code();
+    let label = if wrap {
+        "Stop wrapping long lines"
+    } else {
+        "Wrap long lines"
+    };
+    let flip = config::Command::SetPreference(Preference::WrapCode(!wrap));
+    let wrapping = command("Look", label, Command::Config(flip));
     ThemeName::ALL
         .into_iter()
         .filter(|one| *one != on)
@@ -217,5 +238,6 @@ fn themes(app: &AppState) -> Vec<Entry> {
                 Command::Config(set),
             )
         })
+        .chain(std::iter::once(wrapping))
         .collect()
 }

@@ -253,7 +253,7 @@ fn down_selects_the_first_review_and_enter_opens_it() {
     let app = waiting();
     let (mut ui, _) = on_board(&app);
     key(Key::Down, &mut ui, &app);
-    assert_eq!(ui.board.chosen, Some(("acme/groove".into(), 7)));
+    assert_eq!(ui.hover, Some(Target::Review("acme/groove".into(), 7)));
     let asked = key(Key::Enter, &mut ui, &app);
     assert_eq!(
         asked,
@@ -276,7 +276,7 @@ fn the_selection_stays_on_its_mr_when_the_order_changes() {
         .reviews
         .clicked(crate::views::board::review::By::Title);
     key(Key::Up, &mut ui, &app);
-    assert_eq!(ui.board.chosen, Some(("acme/other".into(), 12)));
+    assert_eq!(ui.hover, Some(Target::Review("acme/other".into(), 12)));
 }
 
 #[test]
@@ -285,7 +285,7 @@ fn escape_lets_the_selection_go() {
     let (mut ui, _) = on_board(&app);
     key(Key::Down, &mut ui, &app);
     key(Key::Escape, &mut ui, &app);
-    assert_eq!(ui.board.chosen, None);
+    assert_eq!(ui.hover, None);
 }
 
 #[test]
@@ -303,8 +303,58 @@ fn the_selection_scrolls_into_view_past_the_bottom() {
     for _ in 0..150 {
         key(Key::Down, &mut ui, &app);
     }
-    let chosen = ui.board.chosen.clone().expect("a selection");
-    let title = format!("mr {}", chosen.1);
+    let Some(Target::Review(_, iid)) = ui.hover.clone() else {
+        panic!("a row is stood on");
+    };
+    let title = format!("mr {iid}");
     assert!(ui.board.review > 0.0, "the column scrolled");
     assert!(order(&app, &ui).contains(&title), "{title} is on screen");
+}
+
+#[test]
+fn an_approved_mr_or_one_a_session_reviews_leaves_the_column() {
+    let mut app = waiting();
+    app.delivery.reviews[0].approved = true;
+    let rows = crate::views::board::review::sorted(&app, &Ui::default());
+    assert_eq!(rows.len(), 1, "nothing to do on the approved one");
+    let live = app.delivery.reviews[1].session_id();
+    app.session.open[0].session.id = groove_types::SessionId::new(live);
+    let rows = crate::views::board::review::sorted(&app, &Ui::default());
+    assert!(rows.is_empty(), "the live one is in Live already");
+}
+
+#[test]
+fn the_board_s_columns_walk_by_key_and_enter_goes_or_stays() {
+    use crate::input::Modifiers;
+    let app = waiting();
+    let (mut ui, _) = on_board(&app);
+    press(Key::Char('2'), crate::tests::ALT, &mut ui, &app);
+    assert_eq!(ui.board.list, Some(crate::views::board::List::Live));
+    press(Key::Down, Modifiers::default(), &mut ui, &app);
+    assert!(
+        matches!(ui.hover, Some(crate::hit::Target::Session(_))),
+        "{:?}",
+        ui.hover
+    );
+    let ctrl = Modifiers {
+        ctrl: true,
+        ..Modifiers::default()
+    };
+    let stayed = press(Key::Enter, ctrl, &mut ui, &app);
+    assert_eq!(stayed[0].id(), "session.open");
+    assert_eq!(
+        ui.surface,
+        crate::Surface::Board,
+        "ctrl+Enter stays on the board"
+    );
+    press(Key::Enter, Modifiers::default(), &mut ui, &app);
+    assert_eq!(ui.surface, crate::Surface::Session, "Enter goes to it");
+    ui.surface = crate::Surface::Board;
+    press(Key::Char('4'), crate::tests::ALT, &mut ui, &app);
+    press(Key::Down, Modifiers::default(), &mut ui, &app);
+    let opened = press(Key::Enter, ctrl, &mut ui, &app);
+    assert_eq!(opened[0].id(), "session.open_review");
+    assert_eq!(ui.surface, crate::Surface::Board);
+    press(Key::Char('1'), crate::tests::ALT, &mut ui, &app);
+    assert_eq!(ui.focus, crate::Focus::Rail);
 }

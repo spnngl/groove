@@ -18,24 +18,22 @@ use groove_ui_kit::layout::{Spec, column_in};
 use groove_ui_kit::text::{ago, row};
 use groove_ui_kit::widgets::{Cell, Column, Rows, Shown, Table, Width};
 
-/// Every MR the filter lets through, in the order the table is sorted by.
+/// Every MR still to review, neither approved nor open in a session, as the filter and sort leave it.
 pub fn sorted<'a>(app: &'a AppState, ui: &Ui) -> Vec<&'a ReviewMr> {
     let query = ui.board.query();
+    let live = |mr: &ReviewMr| {
+        app.session
+            .get(&groove_types::SessionId::new(mr.session_id()))
+            .is_some()
+    };
     let mut asked: Vec<&ReviewMr> = app
         .delivery
         .reviews
         .iter()
-        .filter(|mr| query.lets_review(mr))
+        .filter(|mr| !mr.approved && !live(mr) && query.lets_review(mr))
         .collect();
     ui.board.reviews.sort(&mut asked);
     asked
-}
-
-pub fn chosen(ui: &Ui, asked: &[&ReviewMr]) -> Option<usize> {
-    let (project, iid) = ui.board.chosen.as_ref()?;
-    asked
-        .iter()
-        .position(|mr| &mr.project == project && mr.iid == *iid)
 }
 
 pub(super) fn draw(ctx: &mut Ctx, body: Rect, ui: &Ui, asked: &[&ReviewMr]) {
@@ -65,7 +63,7 @@ pub(super) fn draw(ctx: &mut Ctx, body: Rect, ui: &Ui, asked: &[&ReviewMr]) {
         },
         count: asked.len(),
         offset: ui.board.review,
-        selected: chosen(ui, asked),
+        selected: None,
         sorted: Some(ui.board.reviews.sorted()),
     };
     let now = ctx.now;

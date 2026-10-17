@@ -21,8 +21,35 @@ the rail only as its attention count.
   a button. Groove never runs it by itself.
 - **Everything is reachable from the keyboard.** The palette is the front door to every
   action. The mouse is a shortcut.
-- **Selection is a background**, one step above its ground — never an underline or a bar.
-  A selected tab is the exception: it keeps its accent underline.
+- **Selection is a background**, one step above its ground. A selected tab adds its accent
+  underline.
+- **Focus is a line.** The region that holds the keyboard carries a 2px accent line along
+  its bottom edge. Enforced by `the_focused_region_alone_carries_the_line`.
+- **A region is one chord away.** `alt+1` to `alt+4` hand the keys to the rail, the agent,
+  the workspace and the sidebar; the terminals keep their own chord. A second press folds
+  the sidebar away. Enforced by `a_second_press_folds_the_sidebar_away`.
+- **A list walks from the keyboard.** In the sidebar the arrows step through the rows, Enter
+  does what a click does, Space stages a changed file, Left and Right fold a folder, and
+  `[` and `]` change the list. `alt+c` puts the caret in the commit box.
+  Enforced by `the_arrows_walk_the_changed_files_and_space_stages_one`.
+- **The rail and the terminals answer too.** On the rail, Enter goes to the workspace and
+  `a` and `v` approve or show the agent's ask. `alt+]` and `alt+[` step through the
+  workspace's tabs, or the terminals' tabs while they have the keys. Enforced by `on_the_rail_enter_goes_to_the_workspace_and_a_and_v_answer_the_ask`.
+- **Kubernetes walks from the keyboard too.** The kinds answer the arrows, a letter starts
+  their search. In the list the arrows walk the rows; Enter opens one on Describe, `y` on
+  its YAML, `l` on its logs. `ctrl+tab` and `ctrl+shift+tab` walk the open files or objects,
+  `ctrl+w` closes the one shown.
+  Enforced by `the_list_s_rows_walk_and_open_on_describe_yaml_or_logs`.
+- **The board walks too.** `alt+1` is the rail, `alt+2` to `alt+4` the Live, Up next and
+  Review columns. The arrows walk the column; Enter, or a click, opens the session and goes
+  to it, `ctrl+Enter` or `ctrl+click` opens it and stays on the board.
+  Enforced by `the_board_s_columns_walk_by_key_and_enter_goes_or_stays`.
+
+- **Long lines wrap on a toggle.** With *wrap long lines* on (Settings › Appearance or the
+  palette), the editor wraps each line to its width; the arrows step row by row, a click
+  lands along the line, and nothing scrolls sideways. A note wraps in its card and while it
+  is typed. Without wrap, the diff and the editor scroll sideways to keep the caret in view.
+  Enforced by `down_steps_along_a_wrapped_line_before_the_next_one`.
 
 ## Limits
 
@@ -48,7 +75,7 @@ the task at the provider is the agent's own write.
 |---|---|---|
 | **Live** | every session on disk, open or closed | last opened |
 | **Up next** | tickets with no session, in the user's local order — the plan | the user's order |
-| **Review** | the forge queue: MRs where the user is a requested reviewer | updated |
+| **Review** | the forge queue: MRs where the user is a requested reviewer, neither approved by them nor open in a session | updated |
 
 Each column header carries its count.
 
@@ -365,10 +392,15 @@ selected section's form on the right: labels left, controls right, one row per s
 hairlines between groups, paths and ids in mono. Clusters alone is a table, since each
 context holds several settings.
 
+**Setup opens on its own once.** At start Groove checks the environment; when a required
+program is missing, claude is signed out or no config file stands, Settings opens on Setup,
+once a launch, unless the user acted first. A section that still needs something shows its
+count in the list. Enforced by `setup_opens_once_when_the_first_check_finds_something_left`.
+
 | Section | Rows |
 |---|---|
-| Setup | environment check — git, gh, glab, claude, curl — each with its version and a mark · claude login · the config file, the state database and the worktree root as paths |
-| Providers | task source, Notion or GitHub, with its fields · forge tokens, gh and glab, present or missing |
+| Setup | environment check — git, gh, glab, curl — each with its version and a mark · claude login · the config file, the state database and the worktree root as paths · next, Providers, while no task source stands |
+| Providers | each task source, Notion or GitHub: its toggle with its gaps counted, where it is read from, then its fields, its status values and its priority values under their own headings, each a picker with what its gap costs beside it · forge tokens, gh and glab, present or missing |
 | Clusters | a table, not rows: each added context with its hue and name, its read-only toggle, its login and remove; only the toggles and buttons act · then the kubeconfig's other contexts, each with add |
 | Agent | auto-approve default · the shared repo, by URL and branch · the skills — core, the user's own, shared — each with its toggle · the routines — pause all, how many run at once, each routine and its triggers |
 | Appearance | theme — Latte, Frappé, Macchiato, Mocha · UI font: IBM Plex Sans · mono font: IBM Plex Mono, JetBrains Mono, Lilex · three sizes: interface, editor, terminal |
